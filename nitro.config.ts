@@ -10,4 +10,13 @@ export default defineConfig({
 		"/item/**": { cache },
 		"/user/**": { cache },
 	},
+	cloudflare: {
+		wrangler: {
+			observability: {
+				enabled: true,
+				logs: { enabled: true, invocation_logs: true },
+				traces: { enabled: true },
+			},
+		},
+	},
 });
