@@ -1,7 +1,7 @@
 {
 	"extends": ["nitro/tsconfig"],
-	"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.lib.tsbuildinfo",
 	"compilerOptions": {
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.lib.tsbuildinfo",
 		"paths": {
 			"~/*": ["./*"]
 		}

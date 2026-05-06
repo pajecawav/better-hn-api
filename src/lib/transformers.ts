@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import type { HackerNewsItem, Story } from "./types";
+import type { HackerNewsItem, HackerNewsUser, Story, User } from "./types";
 
 dayjs.extend(relativeTime);
 
@@ -37,6 +37,16 @@ export const transformItemToStory = (item: HackerNewsItem): Story => {
 	}
 
 	return story;
+};
+
+export const transformUser = (user: HackerNewsUser): User => {
+	return {
+		id: user.id,
+		about: user.about,
+		created_time: user.created,
+		created: dayjs(user.created * 1000).fromNow(),
+		karma: user.karma,
+	} satisfies User;
 };
 
 const processStoryUrl = (item: HackerNewsItem, story: Story) => {

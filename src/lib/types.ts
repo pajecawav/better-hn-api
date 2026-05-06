@@ -33,6 +33,13 @@ export interface HackerNewsItem {
 	descendants: number;
 }
 
+export interface HackerNewsUser {
+	id: string;
+	about?: string;
+	created: number;
+	karma: number;
+}
+
 /**
  * UI friendly "story" representation. Based on the HackerNewsItem which is
  * returned directly from the HN API. Used for feeds like "news", "jobs",
@@ -49,4 +56,35 @@ export interface Story {
 	type: string;
 	url?: string;
 	domain?: string;
+}
+
+/**
+ * UI friendly "item" representation. Based on the HackerNewsItem which is
+ * returned directly from the HN API. Used mostly to represent comments.
+ */
+export interface Item {
+	id: number;
+	title: string;
+	points: number | null;
+	user: string | null;
+	time: number;
+	time_ago: string;
+	content: string;
+	deleted?: boolean;
+	dead?: boolean;
+	type: string;
+	url?: string;
+	domain?: string;
+	comments: Item[];
+	level?: number;
+	comments_count: number;
+	parts?: any[];
+}
+
+export interface User {
+	about?: string;
+	created_time: number;
+	created: string;
+	id: string;
+	karma: number;
 }
