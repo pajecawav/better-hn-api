@@ -10,6 +10,11 @@ export default defineConfig({
 		"/item/**": { cache },
 		"/user/**": { cache },
 	},
+	storage: {
+		hn: {
+			driver: "lru-cache",
+		},
+	},
 	cloudflare: {
 		wrangler: {
 			observability: {

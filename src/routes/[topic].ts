@@ -2,8 +2,8 @@ import { child, get, limitToFirst, orderByKey, query, startAt } from "firebase/d
 import { defineHandler, HTTPError, type H3Event } from "nitro";
 import { withServerTiming } from "nitro/h3";
 import { dbRef } from "../lib/firebase";
+import { resolveItem } from "../lib/resolvers";
 import { transformItemToStory } from "../lib/transformers";
-import type { HackerNewsItem } from "../lib/types";
 
 const TOPICS: Record<string, string> = {
 	news: "topstories",
@@ -30,12 +30,12 @@ export default defineHandler(async event => {
 
 		const itemIds = snapshot.val() as number[];
 
-		return Promise.all<Promise<HackerNewsItem>>(
-			itemIds.map(async id => get(child(dbRef(), `item/${id}`)).then(snap => snap.val())),
-		);
+		return Promise.all(itemIds.map(async id => resolveItem(event, id)));
 	});
 
-	return withServerTiming(event, "transform", () => items.map(transformItemToStory));
+	return withServerTiming(event, "transform", () =>
+		items.filter(v => !!v).map(transformItemToStory),
+	);
 });
 
 const parseTopic = (event: H3Event): string => {

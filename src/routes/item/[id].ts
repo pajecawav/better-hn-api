@@ -1,9 +1,8 @@
-import { child, get } from "firebase/database";
-import { defineHandler, HTTPError } from "nitro";
+import { defineHandler, HTTPError, type H3Event } from "nitro";
 import { withServerTiming } from "nitro/h3";
-import { dbRef } from "~/src/lib/firebase";
+import { resolveItem } from "~/src/lib/resolvers";
 import { transformItem } from "~/src/lib/transformers";
-import type { HackerNewsItem, HackerNewsItemTree } from "~/src/lib/types";
+import type { HackerNewsItemTree } from "~/src/lib/types";
 
 export default defineHandler(async event => {
 	const id = Number(event.context.params?.id);
@@ -16,7 +15,7 @@ export default defineHandler(async event => {
 		throw new HTTPError({ status: 400, message: "Invalid item id param" });
 	}
 
-	const item = await withServerTiming(event, "fetch", () => getItem(id));
+	const item = await withServerTiming(event, "fetch", () => getItem(event, id));
 
 	if (!item) {
 		throw new HTTPError({ status: 404, message: "Item not found" });
@@ -25,11 +24,14 @@ export default defineHandler(async event => {
 	return withServerTiming(event, "transform", () => transformItem(item));
 });
 
-const getItem = async (id: number): Promise<HackerNewsItemTree | null> => {
-	const snapshot = await get(child(dbRef(), `item/${id}`));
-	const item = snapshot.val() as HackerNewsItem;
+const getItem = async (event: H3Event, id: number): Promise<HackerNewsItemTree | null> => {
+	const item = await resolveItem(event, id);
 
-	const comments = item.kids ? await Promise.all(item.kids?.map(getItem)) : [];
+	if (!item) {
+		return null;
+	}
+
+	const comments = item.kids ? await Promise.all(item.kids?.map(id => getItem(event, id))) : [];
 
 	delete item.kids;
 	delete item.parts; // we do not support polls
