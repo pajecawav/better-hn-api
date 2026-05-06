@@ -16,7 +16,7 @@ export default defineHandler(async event => {
 		throw new HTTPError({ status: 400, message: "Invalid item id param" });
 	}
 
-	const item = await withServerTiming(event, "fetct", () => getItem(id));
+	const item = await withServerTiming(event, "fetch", () => getItem(id));
 
 	if (!item) {
 		throw new HTTPError({ status: 404, message: "Item not found" });
