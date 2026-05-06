@@ -40,6 +40,11 @@ export interface HackerNewsUser {
 	karma: number;
 }
 
+export interface HackerNewsItemTree {
+	item: HackerNewsItem;
+	comments: (HackerNewsItemTree | null)[];
+}
+
 /**
  * UI friendly "story" representation. Based on the HackerNewsItem which is
  * returned directly from the HN API. Used for feeds like "news", "jobs",
@@ -69,7 +74,7 @@ export interface Item {
 	user: string | null;
 	time: number;
 	time_ago: string;
-	content: string;
+	content?: string;
 	deleted?: boolean;
 	dead?: boolean;
 	type: string;
