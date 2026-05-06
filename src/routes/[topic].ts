@@ -1,6 +1,6 @@
 import { child, get, limitToFirst, orderByKey, query, startAt } from "firebase/database";
 import { defineHandler, HTTPError, type H3Event } from "nitro";
-import { db } from "../lib/firebase";
+import { dbRef } from "../lib/firebase";
 import { transformItemToStory } from "../lib/transformers";
 import type { HackerNewsItem } from "../lib/types";
 
@@ -19,7 +19,7 @@ export default defineHandler(async event => {
 
 	const snapshot = await get(
 		query(
-			child(db, mappedTopic),
+			child(dbRef(), mappedTopic),
 			orderByKey(),
 			limitToFirst(limit),
 			startAt(offset.toString()),
@@ -28,7 +28,7 @@ export default defineHandler(async event => {
 
 	const items = await Promise.all<Promise<HackerNewsItem>>(
 		(snapshot.val() as number[]).map(async id => {
-			return get(child(db, `item/${id}`)).then(snap => snap.val());
+			return get(child(dbRef(), `item/${id}`)).then(snap => snap.val());
 		}),
 	);
 

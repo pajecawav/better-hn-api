@@ -1,6 +1,6 @@
 import { child, get } from "firebase/database";
 import { defineHandler, HTTPError } from "nitro";
-import { db } from "~/src/lib/firebase";
+import { dbRef } from "~/src/lib/firebase";
 import { transformItem } from "~/src/lib/transformers";
 import type { HackerNewsItem, HackerNewsItemTree } from "~/src/lib/types";
 
@@ -25,7 +25,7 @@ export default defineHandler(async event => {
 });
 
 const getItem = async (id: number): Promise<HackerNewsItemTree | null> => {
-	const snapshot = await get(child(db, `item/${id}`));
+	const snapshot = await get(child(dbRef(), `item/${id}`));
 	const item = snapshot.val() as HackerNewsItem;
 
 	const comments = item.kids ? await Promise.all(item.kids?.map(getItem)) : [];

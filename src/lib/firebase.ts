@@ -5,4 +5,6 @@ export const app = initializeApp({
 	databaseURL: "https://hacker-news.firebaseio.com/",
 });
 
-export const db = ref(getDatabase(app), "v0");
+export const db = getDatabase(app);
+
+export const dbRef = () => ref(db, "v0");
