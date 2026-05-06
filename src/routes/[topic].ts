@@ -1,5 +1,6 @@
 import { child, get, limitToFirst, orderByKey, query, startAt } from "firebase/database";
 import { defineHandler, HTTPError, type H3Event } from "nitro";
+import { withServerTiming } from "nitro/h3";
 import { dbRef } from "../lib/firebase";
 import { transformItemToStory } from "../lib/transformers";
 import type { HackerNewsItem } from "../lib/types";
@@ -17,22 +18,24 @@ export default defineHandler(async event => {
 	const offset = parseOffset(event);
 	const limit = parseLimit(event);
 
-	const snapshot = await get(
-		query(
-			child(dbRef(), mappedTopic),
-			orderByKey(),
-			limitToFirst(limit),
-			startAt(offset.toString()),
-		),
-	);
+	const items = await withServerTiming(event, "fetch", async () => {
+		const snapshot = await get(
+			query(
+				child(dbRef(), mappedTopic),
+				orderByKey(),
+				limitToFirst(limit),
+				startAt(offset.toString()),
+			),
+		);
 
-	const items = await Promise.all<Promise<HackerNewsItem>>(
-		(snapshot.val() as number[]).map(async id => {
-			return get(child(dbRef(), `item/${id}`)).then(snap => snap.val());
-		}),
-	);
+		const itemIds = snapshot.val() as number[];
 
-	return items.map(transformItemToStory);
+		return Promise.all<Promise<HackerNewsItem>>(
+			itemIds.map(async id => get(child(dbRef(), `item/${id}`)).then(snap => snap.val())),
+		);
+	});
+
+	return withServerTiming(event, "transform", () => items.map(transformItemToStory));
 });
 
 const parseTopic = (event: H3Event): string => {

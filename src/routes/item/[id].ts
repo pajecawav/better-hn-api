@@ -1,5 +1,6 @@
 import { child, get } from "firebase/database";
 import { defineHandler, HTTPError } from "nitro";
+import { withServerTiming } from "nitro/h3";
 import { dbRef } from "~/src/lib/firebase";
 import { transformItem } from "~/src/lib/transformers";
 import type { HackerNewsItem, HackerNewsItemTree } from "~/src/lib/types";
@@ -15,13 +16,13 @@ export default defineHandler(async event => {
 		throw new HTTPError({ status: 400, message: "Invalid item id param" });
 	}
 
-	const item = await getItem(id);
+	const item = await withServerTiming(event, "fetct", () => getItem(id));
 
 	if (!item) {
 		throw new HTTPError({ status: 404, message: "Item not found" });
 	}
 
-	return transformItem(item);
+	return withServerTiming(event, "transform", () => transformItem(item));
 });
 
 const getItem = async (id: number): Promise<HackerNewsItemTree | null> => {
