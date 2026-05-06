@@ -57,6 +57,7 @@ export const transformItem = (tree: HackerNewsItemTree, level?: number): Item =>
 		user: item.by,
 		time: item.time,
 		time_ago: dayjs(tree.item.time * 1000).fromNow(),
+		parent: item.parent,
 		type: item.type === "story" ? "link" : item.type,
 		content: item.deleted ? "[deleted]" : cleanText(item.text),
 		deleted: item.deleted,

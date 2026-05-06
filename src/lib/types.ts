@@ -73,6 +73,7 @@ export interface Item {
 	points: number | null;
 	user: string | null;
 	time: number;
+	parent?: number;
 	time_ago: string;
 	content?: string;
 	deleted?: boolean;
