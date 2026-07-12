@@ -1,5 +1,5 @@
 import { defineConfig } from "nitro";
-import { CachedEventHandlerOptions } from "nitro/types";
+import { type CachedEventHandlerOptions } from "nitro/types";
 
 const cache: CachedEventHandlerOptions = { swr: true, maxAge: 60, staleMaxAge: 20 };
 
