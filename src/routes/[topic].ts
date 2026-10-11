@@ -1,8 +1,6 @@
-import { child, get, limitToFirst, orderByKey, query, startAt } from "firebase/database";
 import { defineHandler, HTTPError, type H3Event } from "nitro";
 import { withServerTiming } from "nitro/h3";
-import { dbRef } from "../lib/firebase";
-import { resolveItem } from "../lib/resolvers";
+import { resolveItem, resolveTopic } from "../lib/resolvers";
 import { transformItemToStory } from "../lib/transformers";
 
 const TOPICS: Record<string, string> = {
@@ -19,18 +17,11 @@ export default defineHandler(async event => {
 	const limit = parseLimit(event);
 
 	const items = await withServerTiming(event, "fetch", async () => {
-		const snapshot = await get(
-			query(
-				child(dbRef(), mappedTopic),
-				orderByKey(),
-				limitToFirst(limit),
-				startAt(offset.toString()),
-			),
+		const ids = await resolveTopic(event, mappedTopic);
+
+		return Promise.all(
+			ids.slice(offset, offset + limit).map(async id => resolveItem(event, id)),
 		);
-
-		const itemIds = snapshot.val() as number[];
-
-		return Promise.all(itemIds.map(async id => resolveItem(event, id)));
 	});
 
 	return withServerTiming(event, "transform", () =>
