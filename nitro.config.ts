@@ -21,7 +21,7 @@ const itemCache: CachedEventHandlerOptions = {
 
 export default defineConfig({
 	serverDir: "./src",
-	// FIXME: workaround for nitro 3.0.260903-beta — implicit resolution of `~/...` is broken;
+	// FIXME: workaround for nitro — implicit resolution of `~/...` is broken;
 	// remove once upstream fixes it
 	alias: {
 		"~": import.meta.dirname,
@@ -30,7 +30,7 @@ export default defineConfig({
 		"/**": { cache: listCache },
 		"/item/**": { cache: itemCache },
 	},
-	storage: {
+	kv: {
 		hn: {
 			driver: "lru-cache",
 			// Default driver max is 1000 entries — a single large comment tree
