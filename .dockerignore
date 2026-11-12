@@ -1,0 +1,9 @@
+.git
+.github
+.husky
+.output
+.vim
+.zed
+node_modules
+Dockerfile
+.dockerignore
