@@ -1,6 +1,7 @@
 import { child, get } from "firebase/database";
 import type { H3Event } from "nitro";
 import { defineCachedFunction } from "nitro/cache";
+
 import { dbRef } from "./firebase";
 import type { HackerNewsItem } from "./types";
 

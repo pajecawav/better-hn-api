@@ -1,6 +1,7 @@
 import { deleteApp } from "firebase/app";
 import { goOffline } from "firebase/database";
 import { definePlugin } from "nitro";
+
 import { app, db } from "../lib/firebase";
 
 export default definePlugin(nitroApp => {

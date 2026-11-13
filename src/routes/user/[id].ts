@@ -1,6 +1,7 @@
 import { child, get, query } from "firebase/database";
 import { defineHandler, HTTPError } from "nitro";
 import { withServerTiming } from "nitro/h3";
+
 import { dbRef } from "~/src/lib/firebase";
 import { transformUser } from "~/src/lib/transformers";
 import type { HackerNewsUser } from "~/src/lib/types";

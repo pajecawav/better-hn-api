@@ -1,5 +1,6 @@
-import { defineHandler, HTTPError, type H3Event } from "nitro";
+import { defineHandler, type H3Event, HTTPError } from "nitro";
 import { withServerTiming } from "nitro/h3";
+
 import { resolveItem, resolveTopic } from "../lib/resolvers";
 import { transformItemToStory } from "../lib/transformers";
 
