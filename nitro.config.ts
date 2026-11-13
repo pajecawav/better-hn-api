@@ -21,6 +21,8 @@ const itemCache: CachedEventHandlerOptions = {
 
 export default defineConfig({
 	serverDir: "./src",
+	preset: "bun",
+	builder: "bun",
 	// FIXME: workaround for nitro — implicit resolution of `~/...` is broken;
 	// remove once upstream fixes it
 	alias: {

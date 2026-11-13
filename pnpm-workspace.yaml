@@ -1,7 +1,0 @@
-overrides:
-    # FIXME: temporary pin until the nitro/rolldown issue is fixed upstream:
-    # nitro 3.0.260903-beta + rolldown >=1.2 emits MISSING_CODE_SPLITTING_GROUP_DEBUG_NAME
-    rolldown: 1.0.0-rc.18
-allowBuilds:
-    "@firebase/util": true
-    protobufjs: true

@@ -3,9 +3,9 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"build": "nitro build",
-		"dev": "nitro dev",
-		"preview": "nitro preview",
+		"build": "bun --bun nitro build",
+		"dev": "bun --bun nitro dev",
+		"preview": "bun --bun nitro preview",
 		"lint": "cross-env FORCE_COLOR=1 run-p -l lint:*",
 		"lint:oxlint": "oxlint .",
 		"lint:tsc": "tsc -b --noEmit",
@@ -25,7 +25,6 @@
 		"oxlint": "^1.93.0",
 		"oxlint-tsgolint": "^7.0.2006",
 		"rimraf": "^6.1.4",
-		"rolldown": "^1.3.1",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {
@@ -34,5 +33,8 @@
 		"lru-cache": "^11.5.3",
 		"unstorage": "2.0.0-beta.0"
 	},
-	"packageManager": "pnpm@12.11.2"
+	"trustedDependencies": [
+		"@firebase/util",
+		"protobufjs"
+	]
 }
