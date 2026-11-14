@@ -42,13 +42,4 @@ export default defineConfig({
 			ttl: 30 * 60 * 1000,
 		},
 	},
-	cloudflare: {
-		wrangler: {
-			observability: {
-				enabled: true,
-				logs: { enabled: true, invocation_logs: true },
-				traces: { enabled: true },
-			},
-		},
-	},
 });
