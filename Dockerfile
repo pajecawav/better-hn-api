@@ -34,6 +34,6 @@ USER bun
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-	CMD bun -e "fetch('http://127.0.0.1:'+(process.env.NITRO_PORT||3000)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+	CMD bun -e "fetch('http://127.0.0.1:'+(process.env.NITRO_PORT||3000)+'/news').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["bun", ".output/server/index.mjs"]
