@@ -64,6 +64,40 @@ describe("GET /item/:id", () => {
 		expect(second).toMatchObject({ id: 9229, level: 0, parent: 8863 });
 	});
 
+	test("resolves the full comment tree again on a repeat traversal", async () => {
+		// resolveItem caches the HackerNewsItem by reference; the first
+		// traversal must not corrupt the cached object (the historical
+		// `delete item.kids` mutation made the second traversal empty).
+		setFirebaseData("v0/item/7001", {
+			id: 7001,
+			type: "story",
+			by: "someone",
+			time: 1794678190,
+			score: 10,
+			title: "Story",
+			descendants: 1,
+			parts: [7002, 7003],
+			kids: [7004],
+		});
+		setFirebaseData("v0/item/7004", {
+			id: 7004,
+			type: "comment",
+			by: "someone_else",
+			time: 1794678191,
+			parent: 7001,
+			text: "hello",
+		});
+
+		const first = await itemRoute(makeEvent({ params: { id: "7001" } }));
+		const second = await itemRoute(makeEvent({ params: { id: "7001" } }));
+
+		expect(first.comments).toHaveLength(1);
+		expect(second.comments).toHaveLength(1);
+		expect(second.comments_count).toBe(1);
+		// poll parts stay out of the response
+		expect(second.comments[0]?.parts).toBeUndefined();
+	});
+
 	test("marks deleted comments as [deleted]", async () => {
 		setFirebaseData("v0/item/6001", {
 			id: 6001,

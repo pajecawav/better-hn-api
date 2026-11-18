@@ -26,16 +26,22 @@ export default defineHandler(async event => {
 });
 
 const getItem = async (event: H3Event, id: number): Promise<HackerNewsItemTree | null> => {
-	const item = await resolveItem(event, id);
+	const raw = await resolveItem(event, id);
 
-	if (!item) {
+	if (!raw) {
 		return null;
 	}
 
-	const comments = item.kids ? await Promise.all(item.kids?.map(id => getItem(event, id))) : [];
+	// resolveItem caches this object by reference — build the tree node from a
+	// copy instead of mutating the cached original (the historical
+	// `delete raw.kids` corrupted every later traversal of the same item).
+	// kids are expanded into the comments tree below.
+	const { kids, ...item } = raw;
 
-	delete item.kids;
-	delete item.parts; // we do not support polls
+	// we do not support polls
+	delete item.parts;
+
+	const comments = kids ? await Promise.all(kids.map(id => getItem(event, id))) : [];
 
 	return { item, comments };
 };
