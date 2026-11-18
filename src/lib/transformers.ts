@@ -120,7 +120,7 @@ const processItem = (item: Item, tree: HackerNewsItemTree, level: number) => {
 	);
 };
 
-const cleanText = (html: string): string => {
+const cleanText = (html?: string | null): string => {
 	if (!html) {
 		return "";
 	}

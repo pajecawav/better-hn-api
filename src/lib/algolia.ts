@@ -1,7 +1,7 @@
 import type { H3Event } from "nitro";
 import { defineCachedFunction } from "nitro/cache";
 
-import type { HackerNewsItemTree } from "./types";
+import type { HackerNewsItem, HackerNewsItemTree } from "./types";
 
 // https://hn.algolia.com/api/v1/items/:id returns the whole comment tree in
 // one request — orders of magnitude fewer round trips than walking the
@@ -67,17 +67,19 @@ interface AlgoliaNode {
 }
 
 const mapNode = (node: AlgoliaNode): HackerNewsItemTree => ({
+	// Conditional spreads keep optional fields absent (like Firebase data)
+	// instead of materialising title: "" / points: 0 / parent: 0 noise.
 	item: {
 		id: node.id,
 		type: node.type as HackerNewsItemTree["item"]["type"],
 		by: node.author ?? "",
 		time: node.created_at_i,
-		text: node.text ?? "",
-		parent: node.parent_id ?? 0,
-		url: node.url ?? undefined,
-		score: node.points ?? 0,
-		title: node.title ?? "",
-	},
+		...(node.text !== null ? { text: node.text } : {}),
+		...(node.url !== null ? { url: node.url } : {}),
+		...(node.title !== null ? { title: node.title } : {}),
+		...(node.points !== null ? { score: node.points } : {}),
+		...(node.parent_id !== null ? { parent: node.parent_id } : {}),
+	} as HackerNewsItem,
 	comments: (node.children ?? []).map(mapNode),
 });
 

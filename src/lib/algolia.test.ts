@@ -91,8 +91,6 @@ describe("resolveAlgoliaItem", () => {
 				type: "story",
 				by: "dhouston",
 				time: 1175714200,
-				text: "",
-				parent: 0,
 				url: "https://example.com/app",
 				score: 104,
 				title: "My YC app",
@@ -102,6 +100,18 @@ describe("resolveAlgoliaItem", () => {
 				{ item: expect.objectContaining({ id: 9229, parent: 8863 }), comments: [] },
 			],
 		});
+		// comment nodes carry exactly the fields a firebase comment has —
+		// no title/points noise on leaves, no parent on the root
+		const [firstComment] = tree?.comments ?? [];
+		expect(firstComment ? Object.keys(firstComment.item).toSorted() : []).toEqual([
+			"by",
+			"id",
+			"parent",
+			"text",
+			"time",
+			"type",
+		]);
+		expect("parent" in (tree?.item ?? {})).toBe(false);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(fetchMock.mock.calls[0]?.[0]).toBe("https://hn.algolia.com/api/v1/items/8863");
 	});

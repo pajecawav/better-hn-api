@@ -12,11 +12,11 @@ export interface HackerNewsItem {
 	/** Creation date of the item, in Unix Time */
 	time: number;
 	/** The comment, story or poll text. HTML */
-	text: string;
+	text?: string;
 	/** true if the item is dead */
 	dead?: boolean;
 	/** The comment's parent: either another comment or the relevant story */
-	parent: number;
+	parent?: number;
 	/** The pollopt's associated poll */
 	poll?: number;
 	/** The ids of the item's comments, in ranked display order */
