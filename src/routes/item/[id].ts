@@ -1,6 +1,7 @@
 import { defineHandler, type H3Event, HTTPError } from "nitro";
 import { withServerTiming } from "nitro/h3";
 
+import { resolveAlgoliaItem } from "~/src/lib/algolia";
 import { resolveItem } from "~/src/lib/resolvers";
 import { transformItem } from "~/src/lib/transformers";
 import type { HackerNewsItemTree } from "~/src/lib/types";
@@ -16,7 +17,9 @@ export default defineHandler(async event => {
 		throw new HTTPError({ status: 400, message: "Invalid item id param" });
 	}
 
-	const item = await withServerTiming(event, "fetch", () => getItem(event, id));
+	const item = await withServerTiming(event, "fetch", () =>
+		getItem(event, id, parseSource(event)),
+	);
 
 	if (!item) {
 		throw new HTTPError({ status: 404, message: "Item not found" });
@@ -25,7 +28,36 @@ export default defineHandler(async event => {
 	return withServerTiming(event, "transform", () => transformItem(item));
 });
 
-const getItem = async (event: H3Event, id: number): Promise<HackerNewsItemTree | null> => {
+// `?source=algolia` fetches the whole tree in one request, falling back to
+// the Firebase walk when Algolia is rate limited, erroring, or has no item.
+const getItem = async (
+	event: H3Event,
+	id: number,
+	source: "algolia" | "firebase",
+): Promise<HackerNewsItemTree | null> => {
+	if (source === "algolia") {
+		try {
+			const tree = await resolveAlgoliaItem(event, id);
+
+			if (tree) {
+				return tree;
+			}
+		} catch (error) {
+			console.error("[item] algolia fallback:", error);
+		}
+	}
+
+	return getItemFromFirebase(event, id);
+};
+
+const parseSource = (event: H3Event): "algolia" | "firebase" => {
+	return event.url.searchParams.get("source") === "algolia" ? "algolia" : "firebase";
+};
+
+const getItemFromFirebase = async (
+	event: H3Event,
+	id: number,
+): Promise<HackerNewsItemTree | null> => {
 	const raw = await resolveItem(event, id);
 
 	if (!raw) {
@@ -41,7 +73,7 @@ const getItem = async (event: H3Event, id: number): Promise<HackerNewsItemTree |
 	// we do not support polls
 	delete item.parts;
 
-	const comments = kids ? await Promise.all(kids.map(id => getItem(event, id))) : [];
+	const comments = kids ? await Promise.all(kids.map(id => getItemFromFirebase(event, id))) : [];
 
 	return { item, comments };
 };

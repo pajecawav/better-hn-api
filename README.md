@@ -62,6 +62,12 @@ curl "https://api.bhn.pajecawav.dev/news?limit=1"
 
 A single item with its full comment tree resolved server-side as nested `comments`.
 
+Query params:
+
+| Param    | Default | Notes                                                                                                                                                                                                                                                                                                   |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source` | `fb`    | `fb` walks HN's Firebase database node by node. `algolia` fetches the whole tree in a single request from the [Algolia HN Search API](https://hn.algolia.com/api) — much faster on large threads, omits dead/deleted comments, and falls back to Firebase when rate limited or the item is not indexed. |
+
 ```bash
 curl "https://api.bhn.pajecawav.dev/item/8863"
 ```

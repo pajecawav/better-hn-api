@@ -1,9 +1,18 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 
 import { expectHTTPError, makeEvent, setFirebaseData } from "../../test-utils";
 
 // Import after test-utils: the route must resolve firebase/database against the mock.
 const itemRoute = (await import("./[id].ts")).default;
+
+// ?source=algolia calls the real network stack — mock global fetch for it.
+const realFetch = globalThis.fetch;
+const fetchMock = mock((_url: string | URL | Request) => Promise.resolve(new Response()));
+globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+afterAll(() => {
+	globalThis.fetch = realFetch;
+});
 
 describe("GET /item/:id", () => {
 	test("resolves the full comment tree", async () => {
@@ -131,5 +140,113 @@ describe("GET /item/:id", () => {
 
 	test("rejects a non-numeric id", async () => {
 		await expectHTTPError(() => itemRoute(makeEvent({ params: { id: "abc" } })), 400);
+	});
+});
+
+describe("GET /item/:id with ?source=algolia", () => {
+	const algoliaPayload = (id: number, kidId: number, grandKidId: number) => ({
+		id,
+		type: "story",
+		author: "someone",
+		created_at_i: 1794678190,
+		title: "Algolia story",
+		text: null,
+		url: "https://example.com/algolia",
+		points: 10,
+		parent_id: null,
+		children: [
+			{
+				id: kidId,
+				type: "comment",
+				author: "commenter",
+				created_at_i: 1794678191,
+				title: null,
+				text: "top comment",
+				url: null,
+				points: null,
+				parent_id: id,
+				children: [
+					{
+						id: grandKidId,
+						type: "comment",
+						author: "replier",
+						created_at_i: 1794678192,
+						title: null,
+						text: "reply",
+						url: null,
+						points: null,
+						parent_id: kidId,
+						children: [],
+					},
+				],
+			},
+		],
+	});
+
+	const firebaseTree = (storyId: number, commentId: number) => {
+		setFirebaseData(`v0/item/${storyId}`, {
+			id: storyId,
+			type: "story",
+			by: "someone",
+			time: 1794678190,
+			score: 10,
+			title: "Firebase story",
+			descendants: 1,
+			kids: [commentId],
+		});
+		setFirebaseData(`v0/item/${commentId}`, {
+			id: commentId,
+			type: "comment",
+			by: "commenter",
+			time: 1794678191,
+			parent: storyId,
+			text: "firebase comment",
+		});
+	};
+
+	test("serves the tree from a single algolia request", async () => {
+		fetchMock.mockReset();
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(algoliaPayload(7100, 7101, 7102)), {
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const item = await itemRoute(
+			makeEvent({ params: { id: "7100" }, query: "source=algolia" }),
+		);
+
+		expect(item).toMatchObject({ id: 7100, title: "Algolia story", comments_count: 2 });
+		expect(item.comments[0]).toMatchObject({ id: 7101, level: 0, parent: 7100 });
+		expect(item.comments[0]?.comments[0]).toMatchObject({ id: 7102, level: 1 });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	test("falls back to firebase when algolia has no item", async () => {
+		fetchMock.mockReset();
+		fetchMock.mockResolvedValueOnce(new Response("not found", { status: 404 }));
+		firebaseTree(7200, 7201);
+
+		const item = await itemRoute(
+			makeEvent({ params: { id: "7200" }, query: "source=algolia" }),
+		);
+
+		expect(item).toMatchObject({ id: 7200, title: "Firebase story" });
+		expect(item.comments).toHaveLength(1);
+	});
+
+	test("falls back to firebase when rate limited, without retrying", async () => {
+		fetchMock.mockReset();
+		fetchMock.mockResolvedValueOnce(new Response("rate limit", { status: 429 }));
+		firebaseTree(7300, 7301);
+
+		const item = await itemRoute(
+			makeEvent({ params: { id: "7300" }, query: "source=algolia" }),
+		);
+
+		expect(item).toMatchObject({ id: 7300, title: "Firebase story" });
+		expect(item.comments).toHaveLength(1);
+		// one attempt only — the cooldown keeps us from hammering algolia
+		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 });

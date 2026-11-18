@@ -18,7 +18,7 @@ export interface HackerNewsItem {
 	/** The comment's parent: either another comment or the relevant story */
 	parent: number;
 	/** The pollopt's associated poll */
-	poll: number;
+	poll?: number;
 	/** The ids of the item's comments, in ranked display order */
 	kids?: number[];
 	/** The URL of the story */
@@ -30,7 +30,7 @@ export interface HackerNewsItem {
 	/** A list of related pollopts, in display order */
 	parts?: any[];
 	/** In the case of stories or polls, the total comment count */
-	descendants: number;
+	descendants?: number;
 }
 
 export interface HackerNewsUser {

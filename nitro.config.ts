@@ -17,6 +17,9 @@ const itemCache: CachedEventHandlerOptions = {
 	swr: true,
 	maxAge: 60,
 	staleMaxAge: 300,
+	// ?source=algolia and the default Firebase walk produce different trees
+	// (algolia omits dead/deleted comments) — the query must be part of the key.
+	allowQuery: ["source"],
 };
 
 export default defineConfig({
