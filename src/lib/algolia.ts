@@ -10,6 +10,7 @@ import type { HackerNewsItem, HackerNewsItemTree } from "./types";
 
 const ALGOLIA_ITEM_URL = "https://hn.algolia.com/api/v1/items/";
 const REQUEST_TIMEOUT_MS = 15_000;
+const USER_AGENT = "better-hn-api (+https://api.bhn.pajecawav.dev)";
 
 // Circuit breaker: after a 429 we stop calling the API entirely for a
 // cooldown window. Repeated rate limits escalate the window up to a cap;
@@ -92,7 +93,7 @@ export const resolveAlgoliaItem = defineCachedFunction(
 
 		const response = await fetch(`${ALGOLIA_ITEM_URL}${id}`, {
 			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-			headers: { accept: "application/json" },
+			headers: { accept: "application/json", "user-agent": USER_AGENT },
 		});
 
 		if (response.status === 429) {

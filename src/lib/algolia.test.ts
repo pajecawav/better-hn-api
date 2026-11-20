@@ -6,7 +6,9 @@ import { algoliaRateLimited, resetAlgoliaRateLimit, resolveAlgoliaItem } from ".
 
 // The lib resolves `fetch` from the global scope on every call.
 const realFetch = globalThis.fetch;
-const fetchMock = mock((_url: string | URL | Request) => Promise.resolve(new Response()));
+const fetchMock = mock((_url: string | URL | Request, _init?: RequestInit) =>
+	Promise.resolve(new Response()),
+);
 globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
 const event = {} as H3Event;
@@ -113,7 +115,12 @@ describe("resolveAlgoliaItem", () => {
 		]);
 		expect("parent" in (tree?.item ?? {})).toBe(false);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock.mock.calls[0]?.[0]).toBe("https://hn.algolia.com/api/v1/items/8863");
+		const [url, init] = fetchMock.mock.calls[0] ?? [];
+		expect(url).toBe("https://hn.algolia.com/api/v1/items/8863");
+		expect(init?.headers).toMatchObject({
+			accept: "application/json",
+			"user-agent": "better-hn-api (+https://api.bhn.pajecawav.dev)",
+		});
 	});
 
 	test("returns null on 404 so the caller can fall back", async () => {
@@ -121,6 +128,24 @@ describe("resolveAlgoliaItem", () => {
 
 		expect(await resolveAlgoliaItem(event, 7001)).toBeNull();
 		expect(algoliaRateLimited()).toBe(false);
+	});
+
+	test("caches 404 misses for the cache window (negative cache)", async () => {
+		fetchMock.mockResolvedValueOnce(new Response("not found", { status: 404 }));
+
+		expect(await resolveAlgoliaItem(event, 9101)).toBeNull();
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		// even though algolia "has" the item now, the cached null wins —
+		// not-yet-indexed items don't hammer the api until the entry expires
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify({ ...algoliaStory, id: 9101 }), {
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		expect(await resolveAlgoliaItem(event, 9101)).toBeNull();
+		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
 	test("does not call the api again while the cooldown is active", async () => {
