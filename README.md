@@ -64,9 +64,9 @@ A single item with its full comment tree resolved server-side as nested `comment
 
 Query params:
 
-| Param    | Default | Notes                                                                                                                                                                                                                                                                                                   |
-| -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source` | `fb`    | `fb` walks HN's Firebase database node by node. `algolia` fetches the whole tree in a single request from the [Algolia HN Search API](https://hn.algolia.com/api) — much faster on large threads, omits dead/deleted comments, and falls back to Firebase when rate limited or the item is not indexed. |
+| Param    | Default   | Notes                                                                                                                                                                                                                                                                                                                                                                                               |
+| -------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source` | `algolia` | `algolia` fetches the whole tree in a single request from the [Algolia HN Search API](https://hn.algolia.com/api) — much faster on large threads, but omits dead/deleted comments and their replies, lags ~a minute on brand-new items, and falls back to Firebase when rate limited or the item is not indexed. `fb` walks HN's Firebase database node by node and includes dead/deleted comments. |
 
 ```bash
 curl "https://api.bhn.pajecawav.dev/item/8863"

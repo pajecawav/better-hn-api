@@ -5,7 +5,7 @@ import { expectHTTPError, makeEvent, setFirebaseData } from "../../test-utils";
 // Import after test-utils: the route must resolve firebase/database against the mock.
 const itemRoute = (await import("./[id].ts")).default;
 
-// ?source=algolia calls the real network stack — mock global fetch for it.
+// the algolia source calls the real network stack — mock global fetch for it.
 const realFetch = globalThis.fetch;
 const fetchMock = mock((_url: string | URL | Request) => Promise.resolve(new Response()));
 globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
@@ -14,8 +14,8 @@ afterAll(() => {
 	globalThis.fetch = realFetch;
 });
 
-describe("GET /item/:id", () => {
-	test("resolves the full comment tree", async () => {
+describe("GET /item/:id via firebase (?source=fb)", () => {
+	test("resolves the full comment tree without touching algolia", async () => {
 		setFirebaseData("v0/item/8863", {
 			id: 8863,
 			type: "story",
@@ -53,7 +53,7 @@ describe("GET /item/:id", () => {
 			text: "Nice",
 		});
 
-		const item = await itemRoute(makeEvent({ params: { id: "8863" } }));
+		const item = await itemRoute(makeEvent({ params: { id: "8863" }, query: "source=fb" }));
 
 		expect(item).toMatchObject({
 			id: 8863,
@@ -71,6 +71,9 @@ describe("GET /item/:id", () => {
 		expect(first.comments[0]?.comments).toHaveLength(0);
 
 		expect(second).toMatchObject({ id: 9229, level: 0, parent: 8863 });
+
+		// the firebase walk must not leak into the algolia transport
+		expect(fetchMock).toHaveBeenCalledTimes(0);
 	});
 
 	test("resolves the full comment tree again on a repeat traversal", async () => {
@@ -97,8 +100,8 @@ describe("GET /item/:id", () => {
 			text: "hello",
 		});
 
-		const first = await itemRoute(makeEvent({ params: { id: "7001" } }));
-		const second = await itemRoute(makeEvent({ params: { id: "7001" } }));
+		const first = await itemRoute(makeEvent({ params: { id: "7001" }, query: "source=fb" }));
+		const second = await itemRoute(makeEvent({ params: { id: "7001" }, query: "source=fb" }));
 
 		expect(first.comments).toHaveLength(1);
 		expect(second.comments).toHaveLength(1);
@@ -128,14 +131,17 @@ describe("GET /item/:id", () => {
 			text: "should not leak",
 		});
 
-		const item = await itemRoute(makeEvent({ params: { id: "6001" } }));
+		const item = await itemRoute(makeEvent({ params: { id: "6001" }, query: "source=fb" }));
 
 		expect(item.comments[0]).toMatchObject({ id: 6002, deleted: true });
 		expect(item.comments[0]?.content).toBe("[deleted]");
 	});
 
 	test("returns 404 for a missing item", async () => {
-		await expectHTTPError(() => itemRoute(makeEvent({ params: { id: "7777" } })), 404);
+		await expectHTTPError(
+			() => itemRoute(makeEvent({ params: { id: "7777" }, query: "source=fb" })),
+			404,
+		);
 	});
 
 	test("rejects a non-numeric id", async () => {
@@ -203,6 +209,20 @@ describe("GET /item/:id with ?source=algolia", () => {
 			text: "firebase comment",
 		});
 	};
+
+	test("defaults to algolia when no source is given", async () => {
+		fetchMock.mockReset();
+		fetchMock.mockResolvedValueOnce(
+			new Response(JSON.stringify(algoliaPayload(7400, 7401, 7402)), {
+				headers: { "content-type": "application/json" },
+			}),
+		);
+
+		const item = await itemRoute(makeEvent({ params: { id: "7400" } }));
+
+		expect(item).toMatchObject({ id: 7400, title: "Algolia story", comments_count: 2 });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
 
 	test("serves the tree from a single algolia request", async () => {
 		fetchMock.mockReset();

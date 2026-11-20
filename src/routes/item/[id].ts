@@ -28,8 +28,9 @@ export default defineHandler(async event => {
 	return withServerTiming(event, "transform", () => transformItem(item));
 });
 
-// `?source=algolia` fetches the whole tree in one request, falling back to
-// the Firebase walk when Algolia is rate limited, erroring, or has no item.
+// The tree comes from Algolia in one request by default; ?source=fb forces
+// the Firebase walk. Any Algolia failure (rate limit, error, not indexed)
+// falls back to the walk.
 const getItem = async (
 	event: H3Event,
 	id: number,
@@ -51,7 +52,7 @@ const getItem = async (
 };
 
 const parseSource = (event: H3Event): "algolia" | "firebase" => {
-	return event.url.searchParams.get("source") === "algolia" ? "algolia" : "firebase";
+	return event.url.searchParams.get("source") === "fb" ? "firebase" : "algolia";
 };
 
 const getItemFromFirebase = async (

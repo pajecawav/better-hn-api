@@ -23,9 +23,10 @@ Example: curl https://api.bhn.pajecawav.dev/news?limit=10
 A single item with its full comment tree.
 
 Query params:
-- source — fb (default) walks Firebase node by node; algolia fetches the
-  whole tree in one request (faster on big threads, omits dead/deleted
-  comments, falls back to Firebase on rate limits or misses).
+- source — algolia (default) fetches the whole tree in one request
+  (faster on big threads, omits dead/deleted comments and their replies,
+  falls back to Firebase on rate limits or misses); fb walks Firebase
+  node by node and includes dead/deleted comments.
 
 Example: curl https://api.bhn.pajecawav.dev/item/8863
 
