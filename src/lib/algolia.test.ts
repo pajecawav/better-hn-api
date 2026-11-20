@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, setSystemTime, spyOn, test } from "bun:test";
 
 import type { H3Event } from "nitro";
 
@@ -10,6 +10,10 @@ const fetchMock = mock((_url: string | URL | Request, _init?: RequestInit) =>
 	Promise.resolve(new Response()),
 );
 globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+// Cooldown warnings are expected in these tests — assert them instead of
+// printing them into the test output.
+const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
 
 const event = {} as H3Event;
 
@@ -73,11 +77,13 @@ beforeEach(() => {
 	resetAlgoliaRateLimit();
 	fetchMock.mockReset();
 	globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+	warnSpy.mockClear();
 	setSystemTime(new Date("2026-11-19T12:00:00Z"));
 });
 
 afterAll(() => {
 	globalThis.fetch = realFetch;
+	warnSpy.mockRestore();
 	setSystemTime();
 });
 
@@ -153,6 +159,8 @@ describe("resolveAlgoliaItem", () => {
 
 		await expectRejects(() => resolveAlgoliaItem(event, 7002), /rate limited/);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(warnSpy).toHaveBeenCalledTimes(1);
+		expect(warnSpy).toHaveBeenCalledWith("[algolia] rate limited, backing off for 60s");
 
 		// Fail fast without a network round trip...
 		await expectRejects(() => resolveAlgoliaItem(event, 7003), /cooldown active/);

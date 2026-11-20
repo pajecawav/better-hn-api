@@ -1,17 +1,25 @@
-import { afterAll, describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { expectHTTPError, makeEvent, setFirebaseData } from "../../test-utils";
 
 // Import after test-utils: the route must resolve firebase/database against the mock.
 const itemRoute = (await import("./[id].ts")).default;
+const { AlgoliaRateLimitError } = await import("~/src/lib/algolia");
 
 // the algolia source calls the real network stack — mock global fetch for it.
 const realFetch = globalThis.fetch;
 const fetchMock = mock((_url: string | URL | Request) => Promise.resolve(new Response()));
 globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
+// fallback errors and cooldown warnings are expected here — assert them
+// instead of printing stacks
+const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+
 afterAll(() => {
 	globalThis.fetch = realFetch;
+	errorSpy.mockRestore();
+	warnSpy.mockRestore();
 });
 
 describe("GET /item/:id via firebase (?source=fb)", () => {
@@ -256,6 +264,7 @@ describe("GET /item/:id with ?source=algolia", () => {
 	});
 
 	test("falls back to firebase when rate limited, without retrying", async () => {
+		errorSpy.mockClear();
 		fetchMock.mockReset();
 		fetchMock.mockResolvedValueOnce(new Response("rate limit", { status: 429 }));
 		firebaseTree(7300, 7301);
@@ -268,5 +277,11 @@ describe("GET /item/:id with ?source=algolia", () => {
 		expect(item.comments).toHaveLength(1);
 		// one attempt only — the cooldown keeps us from hammering algolia
 		expect(fetchMock).toHaveBeenCalledTimes(1);
+		// the fallback is logged once, with the rate limit error
+		expect(errorSpy).toHaveBeenCalledTimes(1);
+		expect(errorSpy).toHaveBeenCalledWith(
+			"[item] algolia fallback:",
+			expect.any(AlgoliaRateLimitError),
+		);
 	});
 });
